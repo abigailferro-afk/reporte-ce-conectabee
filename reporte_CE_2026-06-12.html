@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reporte CE – ConectaBEE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bee:#F5A800;--bee-dark:#C47F00;--bee-light:#FFF4D6;
+  --green:#22C55E;--red:#EF4444;--blue:#3B82F6;--purple:#8B5CF6;
+  --bg:#F8F9FB;--card:#FFFFFF;--border:#E5E7EB;
+  --text:#111827;--muted:#6B7280;--small:#374151;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+header{background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%);padding:18px 28px;display:flex;align-items:center;gap:16px;border-bottom:3px solid var(--bee);}
+header .logo{font-size:22px;font-weight:800;color:var(--bee);letter-spacing:-0.5px;}
+header .logo span{color:#fff;}
+header .subtitle{color:#aaa;font-size:12px;margin-top:2px;}
+header .badge{margin-left:auto;background:var(--bee);color:#000;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.toolbar label{font-size:12px;color:var(--muted);font-weight:600;}
+.toolbar select,.toolbar input{padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);background:#fff;}
+.toolbar button{background:var(--bee);color:#000;border:none;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;}
+.toolbar button:hover{background:var(--bee-dark);}
+.toolbar .sep{flex:1;}
+main{padding:20px 28px;display:grid;gap:18px;}
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px 0 0 2px;}
+.kpi.yellow::before{background:var(--bee);}
+.kpi.green::before{background:var(--green);}
+.kpi.blue::before{background:var(--blue);}
+.kpi.purple::before{background:var(--purple);}
+.kpi.red::before{background:var(--red);}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kpi-value{font-size:24px;font-weight:800;margin:4px 0;line-height:1;}
+.kpi-sub{font-size:11px;color:var(--muted);}
+/* Row of 2 charts */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+/* Chart card */
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.chart-card.full{grid-column:1/-1;}
+.chart-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.chart-sub{font-size:11px;color:var(--muted);margin-bottom:14px;}
+.chart-wrap{position:relative;}
+canvas{max-height:240px;}
+canvas.tall{max-height:300px;}
+canvas.xtall{max-height:380px;}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:700;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.5px;border-bottom:2px solid var(--border);}
+tbody tr:hover{background:var(--bg);}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--border);}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.tag-bee{background:var(--bee-light);color:var(--bee-dark);}
+.tag-green{background:#DCFCE7;color:#166534;}
+.tag-red{background:#FEE2E2;color:#991B1B;}
+.bar-inline{display:flex;align-items:center;gap:8px;}
+.bar-bg{flex:1;height:6px;background:#F3F4F6;border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;background:var(--bee);}
+.bar-fill.green{background:var(--green);}
+.footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);background:#fff;margin-top:8px;}
+@media(max-width:900px){
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .row2,.row3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Conecta<span>BEE</span></div>
+    <div class="subtitle">Reporte Ejecutivo CE · Dirección General</div>
+  </div>
+  <span class="badge" id="hdr-fecha">Datos al 12/06/2026</span>
+</header>
+
+<div class="toolbar">
+  <label>Periodo:</label>
+  <select id="filtro-mes" onchange="renderAll()">
+    <option value="all">Todos los meses</option>
+    <option value="enero">Enero</option>
+    <option value="febrero">Febrero</option>
+    <option value="marzo">Marzo</option>
+    <option value="abril">Abril</option>
+    <option value="mayo">Mayo</option>
+    <option value="junio">Junio</option>
+    <option value="julio">Julio</option>
+  </select>
+  <label style="margin-left:12px">Desde:</label>
+  <input type="date" id="filtro-desde" onchange="renderAll()">
+  <label>Hasta:</label>
+  <input type="date" id="filtro-hasta" onchange="renderAll()">
+  <span class="sep"></span>
+  <button onclick="exportCSV()">⬇ Exportar CSV</button>
+  <button onclick="window.print()" style="background:#374151;color:#fff;">🖨 Imprimir</button>
+</div>
+
+<main>
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi yellow"><div class="kpi-label">Cotizado total</div><div class="kpi-value" id="k-cot">$0</div><div class="kpi-sub" id="k-cot-n">0 servicios</div></div>
+    <div class="kpi green"><div class="kpi-label">Ingreso real</div><div class="kpi-value" id="k-ing">$0</div><div class="kpi-sub" id="k-ing-pct">0% conversión</div></div>
+    <div class="kpi blue"><div class="kpi-label">Instalados</div><div class="kpi-value" id="k-inst">0</div><div class="kpi-sub">servicios concluidos</div></div>
+    <div class="kpi purple"><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="k-ticket">$0</div><div class="kpi-sub">por instalación</div></div>
+    <div class="kpi red"><div class="kpi-label">Por cobrar</div><div class="kpi-value" id="k-pendiente">$0</div><div class="kpi-sub">cotizado − ingreso</div></div>
+  </div>
+
+  <!-- Instalados y cotizado por marca -->
+  <div class="row2">
+    <div class="chart-card">
+      <div class="chart-title">📦 Servicios instalados por marca</div>
+      <div class="chart-sub">Cantidad de instalaciones concluidas</div>
+      <div class="chart-wrap"><canvas id="c-inst-marca" class="tall"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💰 Cotizado por marca</div>
+      <div class="chart-sub">Monto total cotizado (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-cot-marca" class="tall"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Ingreso por marca y zona -->
+  <div class="row2">
+    <div class="chart-card">
+      <div class="chart-title">✅ Ingreso por marca</div>
+      <div class="chart-sub">Ingresos reales confirmados (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-ing-marca" class="tall"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🗺️ Instalados por zona</div>
+      <div class="chart-sub">Distribución geográfica de instalaciones</div>
+      <div class="chart-wrap"><canvas id="c-inst-zona" class="tall"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Cotizado y ingreso por zona -->
+  <div class="row2">
+    <div class="chart-card">
+      <div class="chart-title">📍 Cotizado por zona</div>
+      <div class="chart-sub">Monto cotizado por región (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-cot-zona"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💵 Ingreso por zona</div>
+      <div class="chart-sub">Ingreso real por región (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-ing-zona"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Tendencia mensual -->
+  <div class="chart-card full">
+    <div class="chart-title">📅 Tendencia mensual · Cotizado vs Ingreso</div>
+    <div class="chart-sub">Comparativo por mes (MXN)</div>
+    <div class="chart-wrap"><canvas id="c-mes" class="xtall" style="max-height:260px"></canvas></div>
+  </div>
+
+  <!-- Diario -->
+  <div class="row2">
+    <div class="chart-card">
+      <div class="chart-title">📆 Cotizado por día</div>
+      <div class="chart-sub">Monto cotizado diario (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-cot-dia" class="tall" style="max-height:200px"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💳 Ingreso por día</div>
+      <div class="chart-sub">Ingresos diarios confirmados (MXN)</div>
+      <div class="chart-wrap"><canvas id="c-ing-dia" class="tall" style="max-height:200px"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top table -->
+  <div class="chart-card full">
+    <div class="chart-title">🏆 Tabla resumen · Marcas</div>
+    <div class="chart-sub">Cotizado vs Ingreso vs Instalaciones por marca</div>
+    <div style="overflow-x:auto;margin-top:8px;">
+      <table id="tbl-marcas">
+        <thead><tr><th>Marca</th><th>Cotizado</th><th>Ingreso</th><th>Instalados</th><th>% Conversión</th><th>Participación</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+<div class="footer">Generado automáticamente · ConectaBEE CE · <span id="footer-ts"></span></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA — inyectada/reemplazada por Python script
+// ═══════════════════════════════════════════════
+const DATA = {"kpi": {"cot_total": 31132432.75, "ing_total": 1485713.0, "inst_total": 158, "cot_count": 1766, "conv_pct": 4.8}, "inst_marca": {"Mercedes Benz": 58, "BYD": 17, "CHIREY": 16, "CE": 14, "BMW": 13, "Tesla": 7, "GEELY": 7, "Volvo": 5, "Element": 4, "JEEP": 4, "Porsche": 3, "ZEEKR": 2, "Jaecoo": 1, "Chevrolet": 1, "CHANGAN": 1, "GSK": 1, "Mercedez Benz": 1, "Alfa Romeo": 1, "Mini": 1, "TESLA": 1}, "inst_zona": {"Ciudad de México": 49, "Nuevo León": 15, "Jalisco": 14, "Estado de México": 13, "Querétaro": 12, "Guanajuato": 6, "Sinaloa": 5, "Quintana Roo": 5, "Veracruz": 5, "Michoacan": 4, "Puebla": 4, "Yucatán": 4, "Baja California": 3, "Coahuila": 2, "San Luis Potosí": 2, "Hidalgo": 2, "Chihuahua": 2, "Aguascalientes": 2, "Tabasco": 2, "Tlaxcala": 1, "Guerrero": 1, "Durango": 1, "Zacatecas": 1, "Morelos": 1, "Tamaulipas": 1, "Oaxaca": 1}, "ing_marca": {"Mercedes Benz": 623419.57, "BYD": 164488.56, "CHIREY": 120529.18, "Element": 112631.84, "Porsche": 71899.32, "CE": 71247.25, "JEEP": 68740.02, "BMW": 63744.93, "Volvo": 55959.89, "GEELY": 39239.98, "Tesla": 35297.28, "ZEEKR": 13632.0, "CHANGAN": 11250.0, "Jaecoo": 9280.0, "Chevrolet": 8689.26, "TESLA": 5098.31, "Mini": 3565.61, "Alfa Romeo": 2500.0, "GSK": 2500.0, "Mercedez Benz": 2000.0}, "ing_zona": {"Ciudad de México": 427095.95, "Estado de México": 195286.65, "Nuevo León": 178509.42, "Jalisco": 96498.59, "Sinaloa": 76210.0, "Yucatán": 69024.71, "Guanajuato": 63893.98, "Querétaro": 57688.05, "Puebla": 47930.12, "Quintana Roo": 35313.24, "Michoacan": 33114.99, "Veracruz": 29469.49, "Baja California": 21524.99, "Chihuahua": 19149.99, "Guerrero": 16240.0, "Hidalgo": 14464.0, "Coahuila": 14125.0, "San Luis Potosí": 13252.0, "Durango": 12284.99, "Morelos": 11852.99, "Oaxaca": 11252.0, "Zacatecas": 11252.0, "Tabasco": 10968.73, "Tlaxcala": 9280.0, "Tamaulipas": 5624.99, "Aguascalientes": 4406.13}, "cot_marca": {"BYD": 4880403.37, "CE": 4049175.56, "Mercedes Benz": 3680847.67, "BMW": 3069779.57, "GEELY": 2802237.88, "CHIREY": 2771109.26, "Tesla": 2639735.16, "Element": 1719536.63, "Mini": 732174.24, "Volvo": 618747.15, "JEEP": 523253.89, "Sin marca": 406062.76, "GSK": 393299.13, "Porsche": 385358.37, "CHANGAN": 381342.96, "ZEEKR": 322263.37, "Jaecoo": 242484.66, "Chevrolet": 219160.41, "JAC": 207191.33, "Zeekr": 163894.03, "Jeep": 97510.45, "LOCALIZA": 94712.62, "No lo tengo": 87629.07, "AUDI": 57377.67, "Jetour": 55799.8, "Cupra": 41946.67, "TESLA": 35877.44, "Localiza": 33778.25, "MG": 30513.95, "Mini Copper": 25949.9, "JAECOO 7 PHEV PLATA": 23169.35, "Peugeot E Partner": 21959.07, "Mabe": 19875.01, "tesla": 18929.95, "Mercedez Benz": 18649.97, "GlE 53": 17009.96, "Kia": 16678.8, "Ford": 15690.01, "GAC": 15030.02, "Marca Campo Abierta": 14250.02, "Toyota": 14250.02, "Jeep rubicon": 14041.41, "geely": 13694.0, "Tesla Y": 13080.67, "Geely ex5": 11250.0, "JAECOO 7 PHEV INSPIRE": 11250.0, "Tiggo 7": 11250.0, "Geely EX2": 11249.98, "JAECOO 7 PHEV": 8625.01, "MINI": 8625.01, "JAECOO": 8624.99, "volkswagen": 7291.33, "Mini countryman": 6425.0, "Gelly": 5625.0, "Geely Ex2": 5624.99, "Jaecoo 7": 5624.99, "Nuevo León": 5624.99, "Zeeiker": 5624.99, "mercedes benz": 5624.99, "Alfa Romeo": 2500.0, "Jeep wrangler": 2500.0, "bmw": 2500.0, "VMW": 1130.0}, "cot_zona": {"Ciudad de México": 19128652.37, "Jalisco": 1761397.02, "Querétaro": 1606599.36, "Nuevo León": 1540933.01, "Estado de México": 1384734.64, "Puebla": 929671.53, "Yucatán": 828766.08, "Morelos": 480429.8, "Guanajuato": 452231.17, "Hidalgo": 397627.65, "Coahuila": 301230.34, "Baja California": 282847.56, "Quintana Roo": 200283.98, "Veracruz": 166730.16, "Tamaulipas": 162530.71, "Michoacan": 145897.18, "Michoacán": 141618.94, "San Luis Potosí": 135607.06, "Sinaloa": 111519.16, "Oaxaca": 104741.28, "Chihuahua": 103675.44, "Tlaxcala": 103484.1, "Aguascalientes": 96769.35, "Sonora": 74326.08, "Estado de México - Naucalpan": 68886.62, "Tabasco": 66888.84, "Nayarit": 57054.77, "Baja California Sur": 53881.86, "Colima": 50429.94, "Durango": 47403.99, "Campeche": 45951.91, "Zacatecas": 39078.31, "Ciudad de México - Sur Oriente": 29739.13, "Guerrero": 19388.4, "Chiapas": 8925.01, "Sin zona": 2500.0}, "cot_mes": {"enero": 5712382.49, "febrero": 5565238.18, "marzo": 6975445.87, "abril": 6111375.18, "mayo": 4754392.96, "junio": 2001478.07, "julio": 1320.0, "octubre": 6000.0, "diciembre": 4800.0}, "ing_mes": {"enero": 620774.23, "febrero": 366253.11, "marzo": 217349.61, "abril": 98968.38, "mayo": 56938.47, "junio": 28501.85}, "cot_dia": {"2025-07-31": 1320.0, "2025-10-17": 6000.0, "2025-12-06": 4800.0, "2026-01-02": 414292.34, "2026-01-03": 135411.66, "2026-01-05": 238025.52, "2026-01-06": 265888.43, "2026-01-07": 182398.74, "2026-01-08": 94485.52, "2026-01-09": 249939.71, "2026-01-10": 177695.99, "2026-01-12": 219412.43, "2026-01-13": 299239.6, "2026-01-14": 209959.11, "2026-01-15": 156758.95, "2026-01-16": 321302.74, "2026-01-17": 305867.12, "2026-01-19": 274000.3, "2026-01-20": 336710.99, "2026-01-21": 54304.6, "2026-01-22": 188741.47, "2026-01-23": 365162.83, "2026-01-24": 220016.87, "2026-01-26": 218610.65, "2026-01-27": 62119.01, "2026-01-28": 145301.36, "2026-01-29": 205908.62, "2026-01-30": 169508.45, "2026-01-31": 201319.48, "2026-02-03": 243410.25, "2026-02-04": 197306.3, "2026-02-05": 101064.42, "2026-02-06": 270393.87, "2026-02-07": 272234.92, "2026-02-09": 425256.85, "2026-02-10": 75266.63, "2026-02-11": 211942.3, "2026-02-12": 177524.82, "2026-02-13": 210476.19, "2026-02-14": 264385.53, "2026-02-16": 279128.26, "2026-02-17": 275594.77, "2026-02-18": 202014.35, "2026-02-19": 93506.57, "2026-02-20": 198867.39, "2026-02-21": 399603.38, "2026-02-23": 237215.02, "2026-02-24": 288516.69, "2026-02-25": 153003.16, "2026-02-26": 442260.93, "2026-02-27": 166013.5, "2026-02-28": 380252.08, "2026-03-02": 413901.03, "2026-03-03": 383013.01, "2026-03-04": 265198.4, "2026-03-05": 19876.99, "2026-03-06": 249842.73, "2026-03-07": 421027.22, "2026-03-09": 448419.88, "2026-03-10": 281763.78, "2026-03-11": 350121.53, "2026-03-12": 217400.26, "2026-03-13": 261124.4, "2026-03-14": 176240.51, "2026-03-17": 293255.32, "2026-03-18": 184406.49, "2026-03-19": 365510.18, "2026-03-20": 361838.44, "2026-03-21": 210744.1, "2026-03-23": 388492.1, "2026-03-24": 118342.39, "2026-03-25": 331146.54, "2026-03-26": 238380.76, "2026-03-27": 227800.64, "2026-03-28": 331868.26, "2026-03-30": 283782.65, "2026-03-31": 151948.26, "2026-04-01": 124648.42, "2026-04-02": 454905.96, "2026-04-03": 254808.63, "2026-04-04": 93678.37, "2026-04-06": 236535.14, "2026-04-07": 111903.75, "2026-04-08": 156849.81, "2026-04-09": 402115.58, "2026-04-10": 443350.01, "2026-04-11": 481505.2, "2026-04-13": 538349.77, "2026-04-14": 237482.5, "2026-04-15": 333603.87, "2026-04-16": 159679.84, "2026-04-17": 196050.74, "2026-04-18": 264425.41, "2026-04-20": 260869.46, "2026-04-21": 46593.52, "2026-04-22": 184581.93, "2026-04-23": 242377.4, "2026-04-24": 216395.07, "2026-04-25": 154170.13, "2026-04-27": 122286.44, "2026-04-28": 52889.92, "2026-04-29": 91097.17, "2026-04-30": 250221.14, "2026-05-01": 42031.3, "2026-05-02": 225371.7, "2026-05-04": 80275.37, "2026-05-05": 55868.17, "2026-05-06": 253210.06, "2026-05-07": 351086.2, "2026-05-08": 229668.63, "2026-05-09": 183419.0, "2026-05-11": 199171.8, "2026-05-12": 245460.96, "2026-05-13": 92198.95, "2026-05-14": 244237.49, "2026-05-15": 232488.69, "2026-05-16": 169873.97, "2026-05-18": 305128.05, "2026-05-19": 174254.79, "2026-05-20": 174643.61, "2026-05-21": 90759.04, "2026-05-22": 241916.97, "2026-05-23": 202043.1, "2026-05-25": 282773.11, "2026-05-26": 183998.6, "2026-05-27": 113259.46, "2026-05-28": 226835.89, "2026-05-29": 84134.53, "2026-05-30": 70283.52, "2026-06-01": 382837.4, "2026-06-02": 264938.88, "2026-06-03": 185791.21, "2026-06-04": 257671.49, "2026-06-05": 360628.35, "2026-06-06": 148031.16, "2026-06-08": 138983.31, "2026-06-09": 230615.16, "2026-06-10": 31981.11}, "ing_dia": {"2026-03-04": 11425.01, "2026-03-06": 11252.0, "2026-03-09": 18019.71, "2026-03-10": 13250.0, "2026-03-11": 11249.99, "2026-03-12": 13406.13, "2026-03-13": 22524.99, "2026-03-14": 11852.99, "2026-03-17": 2743.4, "2026-03-18": 11252.0, "2026-03-19": 53519.09, "2026-03-20": 28488.69, "2026-03-23": 3565.61, "2026-03-27": 2000.0, "2026-03-28": 2000.0, "2026-03-31": 800.0, "2026-04-02": 5300.0, "2026-04-03": 8124.99, "2026-04-06": 5624.99, "2026-04-07": 14390.59, "2026-04-08": 5624.99, "2026-04-10": 2500.0, "2026-04-13": 2500.0, "2026-04-14": 2382.8, "2026-04-15": 2000.0, "2026-04-16": 2000.0, "2026-04-20": 3300.01, "2026-04-24": 5948.41, "2026-04-27": 5323.0, "2026-04-29": 15325.0, "2026-04-30": 2000.0, "2026-05-05": 2500.0, "2026-05-12": 8124.99, "2026-05-23": 2480.0, "2026-05-29": 5624.99, "2026-06-02": 6526.55, "2026-06-03": 5624.99, "2026-06-09": 5098.31}};
+
+// ═══════════════════════════════════════════════
+//  PALETTE
+// ═══════════════════════════════════════════════
+const PALETTE = [
+  '#F5A800','#F97316','#EF4444','#8B5CF6','#3B82F6',
+  '#22C55E','#14B8A6','#EC4899','#6366F1','#F59E0B',
+  '#84CC16','#0EA5E9','#D946EF','#10B981','#A78BFA',
+  '#FB923C','#34D399','#60A5FA','#F472B6','#C084FC'
+];
+function pal(n){return PALETTE.slice(0,n);}
+function fmt(n){if(!n||isNaN(n))return '$0';if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';if(n>=1000)return '$'+(n/1000).toFixed(0)+'k';return '$'+Math.round(n).toLocaleString('es-MX');}
+function fmtN(n){if(!n||isNaN(n))return '0';if(n>=1e6)return (n/1e6).toFixed(1)+'M';if(n>=1000)return (n/1000).toFixed(0)+'k';return n.toLocaleString('es-MX');}
+
+const charts = {};
+function mkChart(id, config){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(el.getContext('2d'), config);
+}
+
+// ═══════════════════════════════════════════════
+//  FILTRADO
+// ═══════════════════════════════════════════════
+function applyFilters(data){
+  const mes = document.getElementById('filtro-mes').value;
+  const desde = document.getElementById('filtro-desde').value;
+  const hasta = document.getElementById('filtro-hasta').value;
+  if(mes==='all' && !desde && !hasta) return data;
+
+  // Filter cot_dia / ing_dia by date
+  function filterDia(obj){
+    return Object.fromEntries(Object.entries(obj).filter(([k])=>{
+      if(desde && k < desde) return false;
+      if(hasta && k > hasta) return false;
+      return true;
+    }));
+  }
+  // Filter mes
+  function filterMes(obj){
+    if(mes==='all') return obj;
+    return Object.fromEntries(Object.entries(obj).filter(([k])=>k===mes));
+  }
+
+  return Object.assign({},data,{
+    cot_dia: filterDia(data.cot_dia),
+    ing_dia: filterDia(data.ing_dia),
+    cot_mes: filterMes(data.cot_mes),
+    ing_mes: filterMes(data.ing_mes),
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════
+function renderAll(){
+  const d = applyFilters(DATA);
+
+  // ── KPIs ──
+  const kpi = d.kpi;
+  document.getElementById('k-cot').textContent = fmt(kpi.cot_total);
+  document.getElementById('k-cot-n').textContent = fmtN(kpi.cot_count)+' servicios cotizados';
+  document.getElementById('k-ing').textContent = fmt(kpi.ing_total);
+  document.getElementById('k-ing-pct').textContent = kpi.conv_pct+'% conversión';
+  document.getElementById('k-inst').textContent = fmtN(kpi.inst_total);
+  const ticket = kpi.inst_total>0 ? kpi.ing_total/kpi.inst_total : 0;
+  document.getElementById('k-ticket').textContent = fmt(ticket);
+  document.getElementById('k-pendiente').textContent = fmt(Math.max(0,kpi.cot_total-kpi.ing_total));
+
+  const opts = {responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y??c.parsed)}}}};
+  const optsH = {indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x?fmt(c.parsed.x):c.parsed.x}}}};
+
+  // ── Inst marca (horizontal bar) ──
+  const im = top15(d.inst_marca);
+  mkChart('c-inst-marca',{type:'bar',data:{labels:im.k,datasets:[{data:im.v,backgroundColor:pal(im.k.length),borderRadius:4}]},options:{...optsH,plugins:{...optsH.plugins,tooltip:{callbacks:{label:c=>c.parsed.x+' inst.'}}}}});
+
+  // ── Cot marca ──
+  const cm = top15(d.cot_marca);
+  mkChart('c-cot-marca',{type:'bar',data:{labels:cm.k,datasets:[{data:cm.v,backgroundColor:pal(cm.k.length),borderRadius:4}]},options:{...optsH}});
+
+  // ── Ing marca ──
+  const imgm = top15(d.ing_marca);
+  mkChart('c-ing-marca',{type:'bar',data:{labels:imgm.k,datasets:[{data:imgm.v,backgroundColor:pal(imgm.k.length).map(c=>c+'CC'),borderRadius:4}]},options:{...optsH}});
+
+  // ── Inst zona (pie) ──
+  const iz = top15(d.inst_zona);
+  mkChart('c-inst-zona',{type:'doughnut',data:{labels:iz.k,datasets:[{data:iz.v,backgroundColor:pal(iz.k.length),borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+' inst.'}}}}});
+
+  // ── Cot zona ──
+  const cz = top15(d.cot_zona);
+  mkChart('c-cot-zona',{type:'bar',data:{labels:cz.k,datasets:[{data:cz.v,backgroundColor:'#F5A800',borderRadius:4}]},options:{...optsH}});
+
+  // ── Ing zona ──
+  const igz = top15(d.ing_zona);
+  mkChart('c-ing-zona',{type:'bar',data:{labels:igz.k,datasets:[{data:igz.v,backgroundColor:'#22C55E',borderRadius:4}]},options:{...optsH}});
+
+  // ── Tendencia mensual ──
+  const meses = Array.from(new Set([...Object.keys(d.cot_mes),...Object.keys(d.ing_mes)]));
+  const mesOrder=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  meses.sort((a,b)=>mesOrder.indexOf(a)-mesOrder.indexOf(b));
+  mkChart('c-mes',{type:'bar',data:{labels:meses.map(m=>m.charAt(0).toUpperCase()+m.slice(1)),datasets:[
+    {label:'Cotizado',data:meses.map(m=>d.cot_mes[m]||0),backgroundColor:'#F5A800CC',borderRadius:4},
+    {label:'Ingreso',data:meses.map(m=>d.ing_mes[m]||0),backgroundColor:'#22C55ECC',borderRadius:4},
+  ]},options:{responsive:true,plugins:{legend:{display:true,labels:{font:{size:11}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)}}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // ── Cotizado día ──
+  const cd = d.cot_dia;
+  const cdKeys = Object.keys(cd).sort().slice(-60);
+  mkChart('c-cot-dia',{type:'line',data:{labels:cdKeys.map(k=>k.slice(5)),datasets:[{data:cdKeys.map(k=>cd[k]),borderColor:'#F5A800',backgroundColor:'#F5A80022',fill:true,tension:0.3,pointRadius:2}]},options:{...opts,scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // ── Ingreso día ──
+  const id2 = d.ing_dia;
+  const idKeys = Object.keys(id2).sort().slice(-60);
+  mkChart('c-ing-dia',{type:'line',data:{labels:idKeys.map(k=>k.slice(5)),datasets:[{data:idKeys.map(k=>id2[k]),borderColor:'#22C55E',backgroundColor:'#22C55E22',fill:true,tension:0.3,pointRadius:2}]},options:{...opts,scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
+
+  // ── Tabla marcas ──
+  const tbody = document.querySelector('#tbl-marcas tbody');
+  tbody.innerHTML='';
+  const allMarcas = Array.from(new Set([...Object.keys(d.cot_marca),...Object.keys(d.ing_marca),...Object.keys(d.inst_marca)]));
+  const maxCot = Math.max(...allMarcas.map(m=>d.cot_marca[m]||0),1);
+  allMarcas.sort((a,b)=>(d.cot_marca[b]||0)-(d.cot_marca[a]||0)).slice(0,20).forEach(m=>{
+    const cot=d.cot_marca[m]||0;const ing=d.ing_marca[m]||0;const inst=d.inst_marca[m]||0;
+    const pct=cot>0?Math.round(ing/cot*100):0;const part=Math.round(cot/maxCot*100);
+    tbody.innerHTML+=`<tr>
+      <td><strong>${m}</strong></td>
+      <td>${fmt(cot)}</td>
+      <td>${fmt(ing)}</td>
+      <td>${inst}</td>
+      <td><span class="tag ${pct>=50?'tag-green':'tag-bee'}">${pct}%</span></td>
+      <td><div class="bar-inline"><div class="bar-bg"><div class="bar-fill" style="width:${part}%"></div></div><span style="font-size:10px;color:var(--muted)">${part}%</span></div></td>
+    </tr>`;
+  });
+}
+
+function top15(obj,n=15){
+  const entries=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]).slice(0,n);
+  return {k:entries.map(e=>e[0]),v:entries.map(e=>e[1])};
+}
+
+function exportCSV(){
+  const rows=[['Marca','Cotizado','Ingreso','Instalados']];
+  const allMarcas=Array.from(new Set([...Object.keys(DATA.cot_marca),...Object.keys(DATA.ing_marca),...Object.keys(DATA.inst_marca)]));
+  allMarcas.sort((a,b)=>(DATA.cot_marca[b]||0)-(DATA.cot_marca[a]||0)).forEach(m=>{
+    rows.push([m,DATA.cot_marca[m]||0,DATA.ing_marca[m]||0,DATA.inst_marca[m]||0]);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='reporte_ce_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+// ── Init ──
+(function(){
+  const now=new Date();
+  document.getElementById('hdr-fecha').textContent='Datos al '+now.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('footer-ts').textContent='Generado el '+now.toLocaleString('es-MX');
+  // Set default date range to current year
+  const y=now.getFullYear();
+  document.getElementById('filtro-desde').value=y+'-01-01';
+  document.getElementById('filtro-hasta').value=now.toISOString().slice(0,10);
+  renderAll();
+})();
+</script>
+</body>
+</html>
